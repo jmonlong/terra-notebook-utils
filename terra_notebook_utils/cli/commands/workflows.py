@@ -76,6 +76,7 @@ def estimate_submission_cost(args: argparse.Namespace):
     workflows_metadata = workflows.get_all_workflows(args.submission_id, args.workspace, args.workspace_namespace)
     reporter = TXTReport([("workflow_id", 37),
                           ("shard", 6),
+                          ("task", 10),
                           ("cpus", 5),
                           ("memory (GB)", 12),
                           ("duration (h)", 13),
@@ -86,12 +87,13 @@ def estimate_submission_cost(args: argparse.Namespace):
     for workflow_id, workflow_metadata in workflows_metadata.items():
         shard = 1
         for item in workflows.estimate_workflow_cost(workflow_id, workflow_metadata):
-            cost, cpus, mem, duration, call_cached = (item[k] for k in ('cost',
-                                                                        'number_of_cpus',
-                                                                        'memory',
-                                                                        'duration',
-                                                                        'call_cached'))
-            reporter.print_line(workflow_id, shard, cpus, mem, duration / 3600, call_cached, cost)
+            task, cost, cpus, mem, duration, call_cached = (item[k] for k in ('task_name',
+                                                                              'cost',
+                                                                              'number_of_cpus',
+                                                                              'memory',
+                                                                              'duration',
+                                                                              'call_cached'))
+            reporter.print_line(workflow_id, shard, task, cpus, mem, duration / 3600, call_cached, cost)
             total += cost
             shard += 1
     reporter.print_divider()
