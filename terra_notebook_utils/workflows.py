@@ -87,8 +87,17 @@ def estimate_workflow_cost(workflow_id: str, workflow_metadata: dict) -> Generat
                         disk_size_gb = float(size_gb)
                     else:
                         disk_size_gb = 1.0  # Guess 1GB when disk information is unavailable
-                    cost = (costs.GCPCustomN1Cost.estimate(cpus, memory_gb, runtime, preemptible)
-                            + costs.PersistentDisk.estimate(disk_size_gb, runtime))
+                    # cost of disk allocation
+                    cost_disk = costs.PersistentDisk.estimate(disk_size_gb, runtime)
+                    if disk_description.endswith("LOCAL"):
+                        cost_disk = costs.LocalSSDDisk.estimate(disk_size_gb, runtime)
+                    # cost of instance
+                    cpuplatform_description = js_get("runtimeAttributes.cpuPlatform", call_metadata, default="")
+                    cost_instance = costs.GCPCustomN1Cost.estimate(cpus, memory_gb, runtime, preemptible)
+                    if cpuplatform_description in ["Intel Cascade Lake", "AMD Rome"]:
+                        # N2/N2D instances
+                        cost_instance = costs.GCPCustomN2Cost.estimate(cpus, memory_gb, runtime, preemptible)
+                    cost = cost_instance + cost_disk
                 yield dict(task_name=task_name,
                            cost=cost,
                            number_of_cpus=cpus,
