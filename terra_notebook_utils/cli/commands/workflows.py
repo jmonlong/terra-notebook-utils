@@ -97,7 +97,7 @@ def estimate_submission_cost(args: argparse.Namespace):
             total += cost
             shard += 1
     reporter.print_divider()
-    reporter.print_line("", "", "", "", "", "", total)
+    reporter.print_line("", "", "", "", "", "", "", total)
 
 class TXTReport:
     def __init__(self, fields: List[Tuple[str, int]]):
