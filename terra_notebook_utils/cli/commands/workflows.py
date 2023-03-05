@@ -66,7 +66,12 @@ def get_workflow(args: argparse.Namespace):
 
 @workflow_cli.command("estimate-submission-cost", arguments={
     "--submission-id": dict(type=str, required=True),
-    "--tsv": dict(type=bool, default=False, action='store_true', required=False, help='output in TSV format'),
+    "--tsv": dict(
+        default=False,
+        action="store_true",
+        required=False,
+        help="output in TSV format"
+    ),
     ** workspace_args
 })
 def estimate_submission_cost(args: argparse.Namespace):
