@@ -130,7 +130,7 @@ class TXTReport:
 
     def print_headers(self, tsv=False):
         if tsv:
-            print('\t'.join(self.self.column_headers))
+            print('\t'.join(self.column_headers))
         else:
             print(self.line(*self.column_headers))
 
