@@ -76,7 +76,7 @@ def estimate_submission_cost(args: argparse.Namespace):
     args.workspace, args.workspace_namespace = CLIConfig.resolve(args.workspace, args.workspace_namespace)
     workflows_metadata = workflows.get_all_workflows(args.submission_id, args.workspace, args.workspace_namespace)
     reporter = TXTReport([("workflow_id", 37),
-                          ("task", 10),,
+                          ("task", 10),
                           ("cpus", 5),
                           ("memory_gb", 12),
                           ("duration_h", 13),
