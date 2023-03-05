@@ -72,15 +72,22 @@ def estimate_workflow_cost(workflow_id: str, workflow_metadata: dict) -> Generat
             try:
                 task_name = call_name.split(".")[1]
                 call_cached = bool(int(js_get("callCaching.hit", call_metadata, default=0)))
+                preempted = machine_type = "NA"
                 if call_cached:
                     cost, cpus, memory_gb, runtime, disk_size_gb = 0.0, 0, 0.0, 0.0, 0.0
                 else:
-                    cpus, memory_gb = _parse_machine_type(js_get("jes.machineType", call_metadata))
+                    machine_type = js_get("jes.machineType", call_metadata)
+                    cpus, memory_gb = _parse_machine_type(machine_type)
                     # Assume that Google Lifesciences Pipelines API uses N1 custom machine type
                     start = datetime.strptime(js_get("start", call_metadata), date_format)
                     end = datetime.strptime(js_get("end", call_metadata), date_format)
                     runtime = (end - start).total_seconds()
+                    # preemptible/preempted
                     preemptible = bool(int(js_get("runtimeAttributes.preemptible", call_metadata)))
+                    backendStatus = js_get("backendStatus", call_metadata)
+                    if preemptible:
+                        preempted = backendStatus == "Preempted"
+                    # disk
                     disk_description = js_get("runtimeAttributes.disks", call_metadata, default="")
                     if disk_description.startswith("local-disk"):
                         _, size_gb, _ = disk_description.split()
@@ -104,7 +111,9 @@ def estimate_workflow_cost(workflow_id: str, workflow_metadata: dict) -> Generat
                            memory=memory_gb,
                            disk=disk_size_gb,
                            duration=runtime,
-                           call_cached=call_cached)
+                           call_cached=call_cached,
+                           preempted=preempted,
+                           machine_type=machine_type)
             except (KeyError, TNUCostException) as exc:
                 logger.warning(f"Unable to estimate costs for workflow {workflow_id}: "
                                f"{exc.args[0]}")

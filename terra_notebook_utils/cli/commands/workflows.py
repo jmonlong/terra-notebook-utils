@@ -66,6 +66,7 @@ def get_workflow(args: argparse.Namespace):
 
 @workflow_cli.command("estimate-submission-cost", arguments={
     "--submission-id": dict(type=str, required=True),
+    "--tsv": dict(type=bool, default=False, required=False),
     ** workspace_args
 })
 def estimate_submission_cost(args: argparse.Namespace):
@@ -75,17 +76,17 @@ def estimate_submission_cost(args: argparse.Namespace):
     args.workspace, args.workspace_namespace = CLIConfig.resolve(args.workspace, args.workspace_namespace)
     workflows_metadata = workflows.get_all_workflows(args.submission_id, args.workspace, args.workspace_namespace)
     reporter = TXTReport([("workflow_id", 37),
-                          ("shard", 6),
-                          ("task", 10),
+                          ("task", 10),,
                           ("cpus", 5),
-                          ("memory (GB)", 12),
-                          ("duration (h)", 13),
-                          ("call cached", 12),
-                          ("cost", 5)])
-    reporter.print_headers()
+                          ("memory_gb", 12),
+                          ("duration_h", 13),
+                          ("call_cached", 12),
+                          ("cost", 5),
+                          ("preempted", 10),
+                          ("machine_type", 10)])
+    reporter.print_headers(args.tsv)
     total = 0
     for workflow_id, workflow_metadata in workflows_metadata.items():
-        shard = 1
         for item in workflows.estimate_workflow_cost(workflow_id, workflow_metadata):
             task, cost, cpus, mem, duration, call_cached = (item[k] for k in ('task_name',
                                                                               'cost',
@@ -93,11 +94,18 @@ def estimate_submission_cost(args: argparse.Namespace):
                                                                               'memory',
                                                                               'duration',
                                                                               'call_cached'))
-            reporter.print_line(workflow_id, shard, task, cpus, mem, duration / 3600, call_cached, cost)
+            preempted, machine_type = (item[k] for k in ('preempted', 'machine_type'))
+            if args.tsv:
+                line_arr = [workflow_id, task, cpus, mem, duration / 3600,
+                            call_cached, cost, preempted, machine_type]
+                print('\t'.join([str(ii) for ii in line_arr]))
+            else:
+                reporter.print_line(workflow_id, task, cpus, mem, duration / 3600,
+                                    call_cached, cost, preempted, machine_type)
             total += cost
-            shard += 1
-    reporter.print_divider()
-    reporter.print_line("", "", "", "", "", "", "", total)
+    if not args.tsv:
+        reporter.print_divider()
+        reporter.print_line("", "", "", "", "", "", "", "", "", total)
 
 class TXTReport:
     def __init__(self, fields: List[Tuple[str, int]]):
@@ -115,8 +123,11 @@ class TXTReport:
             parts.append(self.ff(val, width))
         return " ".join(parts)
 
-    def print_headers(self):
-        print(self.line(*self.column_headers))
+    def print_headers(self, tsv=False):
+        if tsv:
+            print('\t'.join(self.self.column_headers))
+        else:
+            print(self.line(*self.column_headers))
 
     def print_line(self, *vals):
         print(self.line(*vals))
