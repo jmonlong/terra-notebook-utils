@@ -119,6 +119,8 @@ def estimate_workflow_cost(workflow_id: str, workflow_metadata: dict) -> Generat
                                f"{exc.args[0]}")
 
 def _parse_machine_type(machine_type: str) -> Tuple[int, float]:
+    # remove 'n2d-' prefix if there
+    machine_type = machine_type.replace('n2d-', '')
     parts = machine_type.split("-", 2)
     if 3 != len(parts) or "custom" != parts[0]:
         raise TNUCostException(f"Cannot estimate costs for machine type '{machine_type}'"
